@@ -7,7 +7,7 @@ This microservice handles payment creation and payment status for bookings.
 - Database: MongoDB
 
 ### Configuration
-1. Ensure MongoDB is running (default: `mongodb://localhost:27017`).
+1. Ensure MongoDB is running.
 2. Update the environment variables in `.env`:
    - `MONGODB_URI`
    - `MONGODB_DB_NAME`
