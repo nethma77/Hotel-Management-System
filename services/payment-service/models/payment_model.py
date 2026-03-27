@@ -39,6 +39,10 @@ class RefundPaymentRequest(BaseModel):
     reason: Optional[str] = None
 
 
+class SyncStripeIntentRequest(BaseModel):
+    payment_intent_id: str = Field(..., min_length=1)
+
+
 class PaymentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
