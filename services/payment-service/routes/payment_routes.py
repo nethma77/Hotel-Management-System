@@ -1,12 +1,15 @@
 from datetime import datetime, timezone
+import os
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, status
 from pymongo import DESCENDING
+import stripe
 
 from database.db import get_payments_collection
 from models.payment_model import (
     CreatePaymentRequest,
+    PaymentMethod,
     PaymentResponse,
     PaymentStatus,
     RefundPaymentRequest,
@@ -15,6 +18,9 @@ from models.payment_model import (
 
 
 router = APIRouter(prefix="/payments", tags=["payments"])
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+if STRIPE_SECRET_KEY:
+    stripe.api_key = STRIPE_SECRET_KEY
 
 
 def _utc_now() -> datetime:
@@ -32,10 +38,16 @@ def _to_response(doc: dict) -> PaymentResponse:
         method=doc["method"],
         status=doc["status"],
         transaction_ref=doc.get("transaction_ref"),
+        stripe_client_secret=doc.get("stripe_client_secret"),
         refund_reason=doc.get("refund_reason"),
         created_at=doc["created_at"],
         updated_at=doc["updated_at"],
     )
+
+
+def _to_smallest_currency_unit(amount: float) -> int:
+    # Stripe accepts an integer in the smallest unit for most currencies.
+    return int(round(amount * 100))
 
 
 @router.on_event("startup")
@@ -54,15 +66,45 @@ def ensure_indexes() -> None:
 def create_payment(payload: CreatePaymentRequest) -> PaymentResponse:
     payments = get_payments_collection()
     now = _utc_now()
+    payment_id = f"PAY-{uuid4().hex[:12].upper()}"
+    transaction_ref = None
+    stripe_client_secret = None
+
+    if payload.method == PaymentMethod.CARD:
+        if not STRIPE_SECRET_KEY:
+            raise HTTPException(
+                status_code=500,
+                detail="Stripe is not configured. Set STRIPE_SECRET_KEY.",
+            )
+        try:
+            intent = stripe.PaymentIntent.create(
+                amount=_to_smallest_currency_unit(payload.amount),
+                currency=payload.currency.lower(),
+                automatic_payment_methods={"enabled": True},
+                metadata={
+                    "booking_id": payload.booking_id,
+                    "customer_id": payload.customer_id,
+                    "payment_id": payment_id,
+                },
+            )
+            transaction_ref = intent.id
+            stripe_client_secret = intent.client_secret
+        except stripe.error.StripeError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Stripe payment intent creation failed: {str(exc)}",
+            ) from exc
+
     payment_doc = {
-        "payment_id": f"PAY-{uuid4().hex[:12].upper()}",
+        "payment_id": payment_id,
         "booking_id": payload.booking_id,
         "customer_id": payload.customer_id,
         "amount": payload.amount,
         "currency": payload.currency.upper(),
         "method": payload.method.value,
         "status": PaymentStatus.PENDING.value,
-        "transaction_ref": None,
+        "transaction_ref": transaction_ref,
+        "stripe_client_secret": stripe_client_secret,
         "refund_reason": None,
         "created_at": now,
         "updated_at": now,
@@ -125,6 +167,29 @@ def refund_payment(payment_id: str, payload: RefundPaymentRequest) -> PaymentRes
         raise HTTPException(
             status_code=400, detail="Only successful payments can be refunded"
         )
+
+    if existing["method"] == "CARD":
+        if not STRIPE_SECRET_KEY:
+            raise HTTPException(
+                status_code=500,
+                detail="Stripe is not configured. Set STRIPE_SECRET_KEY.",
+            )
+        if not existing.get("transaction_ref"):
+            raise HTTPException(
+                status_code=400,
+                detail="Missing Stripe transaction reference for this payment",
+            )
+
+        try:
+            refund_payload = {"payment_intent": existing["transaction_ref"]}
+            if payload.reason:
+                refund_payload["metadata"] = {"reason": payload.reason}
+            stripe.Refund.create(**refund_payload)
+        except stripe.error.StripeError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Stripe refund failed: {str(exc)}",
+            ) from exc
 
     payments.update_one(
         {"_id": existing["_id"]},

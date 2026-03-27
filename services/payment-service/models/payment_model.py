@@ -51,6 +51,7 @@ class PaymentResponse(BaseModel):
     method: PaymentMethod
     status: PaymentStatus
     transaction_ref: Optional[str] = None
+    stripe_client_secret: Optional[str] = None
     refund_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
