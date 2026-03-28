@@ -1,76 +1,54 @@
-from flask import Flask, request, jsonify
-from bson.objectid import ObjectId
-from db import reviews_collection
-from model import review_serializer
-
-app = Flask(__name__)
-
-# ---------------- CREATE ----------------
-@app.route("/reviews", methods=["POST"])
-def create_review():
-    data = request.json
-
-    new_review = {
-        "customer_name": data.get("customer_name"),
-        "hotel_name": data.get("hotel_name"),
-        "rating": data.get("rating"),
-        "comment": data.get("comment")
-    }
-
-    result = reviews_collection.insert_one(new_review)
-    return jsonify({
-        "message": "Review created",
-        "id": str(result.inserted_id)
-    })
+from fastapi import FastAPI, HTTPException
+from database.db import reviews_collection
+from models.review_model import ReviewModel
+from bson import ObjectId
 
 
-# ---------------- READ ALL ----------------
-@app.route("/reviews", methods=["GET"])
-def get_reviews():
-    reviews = reviews_collection.find()
-    return jsonify([review_serializer(r) for r in reviews])
+app = FastAPI(title="Hotel Review Service")
 
+# Root endpoint
+@app.get("/")
+async def root():
+    return {"message": "Review service is running"}
 
-# ---------------- READ ONE ----------------
-@app.route("/reviews/<id>", methods=["GET"])
-def get_review(id):
-    review = reviews_collection.find_one({"_id": ObjectId(id)})
+# Create a review
+@app.post("/reviews")
+async def create_review(review: ReviewModel):
+    result = reviews_collection.insert_one(review.dict())
+    return {"id": str(result.inserted_id)}
 
-    if review:
-        return jsonify(review_serializer(review))
-    return jsonify({"error": "Review not found"}), 404
+# Get all reviews
+@app.get("/reviews")
+async def get_reviews():
+    reviews = list(reviews_collection.find({}))
+    for r in reviews:
+        r["_id"] = str(r["_id"])
+    return reviews
 
+# Get a single review by ID
+@app.get("/reviews/{review_id}")
+async def get_review(review_id: str):
+    review = reviews_collection.find_one({"_id": ObjectId(review_id)})
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    review["_id"] = str(review["_id"])
+    return review
 
-# ---------------- UPDATE ----------------
-@app.route("/reviews/<id>", methods=["PUT"])
-def update_review(id):
-    data = request.json
-
-    updated = reviews_collection.update_one(
-        {"_id": ObjectId(id)},
-        {"$set": {
-            "customer_name": data.get("customer_name"),
-            "hotel_name": data.get("hotel_name"),
-            "rating": data.get("rating"),
-            "comment": data.get("comment")
-        }}
+# Update a review by ID
+@app.put("/reviews/{review_id}")
+async def update_review(review_id: str, review: ReviewModel):
+    result = reviews_collection.update_one(
+        {"_id": ObjectId(review_id)},
+        {"$set": review.dict()}
     )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return {"message": "Review updated successfully"}
 
-    if updated.modified_count > 0:
-        return jsonify({"message": "Review updated"})
-    return jsonify({"error": "Review not found"}), 404
-
-
-# ---------------- DELETE ----------------
-@app.route("/reviews/<id>", methods=["DELETE"])
-def delete_review(id):
-    deleted = reviews_collection.delete_one({"_id": ObjectId(id)})
-
-    if deleted.deleted_count > 0:
-        return jsonify({"message": "Review deleted"})
-    return jsonify({"error": "Review not found"}), 404
-
-
-# ---------------- RUN ----------------
-if __name__ == "__main__":
-    app.run(debug=True)
+# Delete a review by ID
+@app.delete("/reviews/{review_id}")
+async def delete_review(review_id: str):
+    result = reviews_collection.delete_one({"_id": ObjectId(review_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return {"message": "Review deleted successfully"}

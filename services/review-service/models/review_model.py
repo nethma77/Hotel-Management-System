@@ -1,10 +1,6 @@
-from bson.objectid import ObjectId
+from pydantic import BaseModel
 
-def review_serializer(review):
-    return {
-        "id": str(review["_id"]),
-        "customer_name": review.get("customer_name"),
-        "hotel_name": review.get("hotel_name"),
-        "rating": review.get("rating"),
-        "comment": review.get("comment")
-    }
+class ReviewModel(BaseModel):
+    user_id: str
+    rating: int
+    comment: str
