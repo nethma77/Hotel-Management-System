@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from room_routes import router as room_router
+from routes.room_routes import router as room_router
 
 app = FastAPI(title="Room Service API")
 
