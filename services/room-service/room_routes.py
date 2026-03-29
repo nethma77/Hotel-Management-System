@@ -36,7 +36,7 @@ def get_order(order_id: str):
     order["_id"] = str(order["_id"])
     return order
 
-@router.put("/room-service/{order_id}/status")
+@router.patch("/room-service/{order_id}/status")
 def update_status(order_id: str, update: StatusUpdate):
     result = room_order_collection.update_one(
         {"order_id": order_id},
