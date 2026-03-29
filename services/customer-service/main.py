@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from customer_routes import router
+from routes.customer_routes import router
 
 app = FastAPI(title="Customer Service API")
 
