@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from room_db import room_order_collection
+# Updated import to match your renamed db.py
+from db import room_order_collection
+# Updated import to match your renamed room_model.py
 from room_model import RoomOrder, StatusUpdate
 
 router = APIRouter()
