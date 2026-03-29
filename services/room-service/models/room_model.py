@@ -1,20 +1,16 @@
 from pydantic import BaseModel, Field
-from typing import List
-from datetime import datetime
+from typing import Optional
 
-class OrderItem(BaseModel):
-    item_id: str
-    quantity: int
 
-class RoomOrder(BaseModel):
-    order_id: str
-    room_number: str
-    booking_id: str
-    customer_id: str
-    items: List[OrderItem]
-    total_amount: float
-    status: str = "PENDING"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+class Room(BaseModel):
+    room_number: str 
+    room_type: str    
+    price: float      
+    is_available: bool = True  
+    description: Optional[str] = None
 
-class StatusUpdate(BaseModel):
-    status: str
+
+class RoomUpdate(BaseModel):
+    room_type: Optional[str] = None
+    price: Optional[float] = None
+    is_available: Optional[bool] = None
