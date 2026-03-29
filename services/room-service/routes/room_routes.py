@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from db import room_order_collection
-from room_model import RoomOrder, StatusUpdate
+from database.db import room_order_collection
+from models.room_model import RoomOrder, StatusUpdate
 
 router = APIRouter()
 
