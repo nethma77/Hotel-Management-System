@@ -1,12 +1,5 @@
-<<<<<<< HEAD
 fastapi
 uvicorn
 pymongo
-python-dotenv
-=======
-fastapi
-uvicorn
-pymongo
-python-dotenv
->>>>>>> e8f4a66a6b153786af024bb41239b56930ba5f6f
 pydantic
+pydantic-settings

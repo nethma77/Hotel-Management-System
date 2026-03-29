@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from database.db import room_order_collection as rooms_collection # මෙතන db එකේ නම වෙනස් නොකර variable එක විතරක් rooms විදිහට ගත්තා
+from database.db import room_order_collection as rooms_collection 
 from models.room_model import Room, RoomUpdate
 from typing import List
 
