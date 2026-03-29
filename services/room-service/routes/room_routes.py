@@ -1,54 +1,61 @@
 from fastapi import APIRouter, HTTPException
-from database.db import room_order_collection
-from models.room_model import RoomOrder, StatusUpdate
+from database.db import room_order_collection as rooms_collection 
+from models.room_model import Room, RoomUpdate
+from typing import List
 
 router = APIRouter()
 
-@router.post("/room-service")
-def place_order(order: RoomOrder):
-    if room_order_collection is None:
-        raise HTTPException(status_code=503, detail="Database connection unavailable")
+
+@router.post("/rooms", status_code=201)
+def add_room(room: Room):
+    if rooms_collection is None:
+        raise HTTPException(status_code=503, detail="Database connection error")
     
-    try:
-        data = order.dict()
-        if room_order_collection.find_one({"order_id": data["order_id"]}):
-            raise HTTPException(status_code=400, detail="Order ID already exists")
+ 
+    if rooms_collection.find_one({"room_number": room.room_number}):
+        raise HTTPException(status_code=400, detail="Room number already exists")
+    
+    rooms_collection.insert_one(room.model_dump())
+    return {"message": f"Room {room.room_number} added successfully"}
 
-        room_order_collection.insert_one(data)
-        return {"message": "Order placed successfully", "order_id": data["order_id"]}
-    except Exception:
-        raise HTTPException(status_code=500, detail="Error saving to database")
 
-@router.get("/room-service")
-def get_orders():
-    orders = []
-    if room_order_collection is not None:
-        for o in room_order_collection.find():
-            o["_id"] = str(o["_id"])
-            orders.append(o)
-    return orders
+@router.get("/rooms", response_model=List[dict])
+def get_all_rooms():
+    rooms = []
+    for r in rooms_collection.find():
+        r["_id"] = str(r["_id"])
+        rooms.append(r)
+    return rooms
 
-@router.get("/room-service/{order_id}")
-def get_order(order_id: str):
-    order = room_order_collection.find_one({"order_id": order_id})
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    order["_id"] = str(order["_id"])
-    return order
-
-@router.patch("/room-service/{order_id}/status")
-def update_status(order_id: str, update: StatusUpdate):
-    result = room_order_collection.update_one(
-        {"order_id": order_id},
-        {"$set": {"status": update.status}}
+# 🔹
+@router.patch("/rooms/{room_number}")
+def update_room(room_number: str, details: RoomUpdate):
+    
+    update_data = {k: v for k, v in details.model_dump().items() if v is not None}
+    
+    result = rooms_collection.update_one(
+        {"room_number": room_number},
+        {"$set": update_data}
     )
+    
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Order not found")
-    return {"message": f"Status updated to {update.status}"}
+        raise HTTPException(status_code=404, detail="Room not found")
+    
+    return {"message": f"Room {room_number} updated successfully"}
 
-@router.delete("/room-service/{order_id}")
-def delete_order(order_id: str):
-    result = room_order_collection.delete_one({"order_id": order_id})
+# 🔹 
+@router.get("/rooms/check/{room_number}")
+def check_availability(room_number: str):
+    room = rooms_collection.find_one({"room_number": room_number}, {"_id": 0, "is_available": 1})
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    
+    return {"room_number": room_number, "is_available": room["is_available"]}
+
+# 🔹 
+@router.delete("/rooms/{room_number}")
+def delete_room(room_number: str):
+    result = rooms_collection.delete_one({"room_number": room_number})
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Order not found")
-    return {"message": "Order deleted successfully"}
+        raise HTTPException(status_code=404, detail="Room not found")
+    return {"message": "Room deleted successfully"}
