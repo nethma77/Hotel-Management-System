@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payments · Stripe test console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+      :root {
+        --bg-deep: #0f1419;
+        --bg-mid: #1a2332;
+        --surface: rgba(255, 252, 248, 0.97);
+        --surface-2: #faf7f2;
+        --ink: #1a1814;
+        --muted: #5c564c;
+        --line: rgba(26, 24, 20, 0.1);
+        --gold: #c4a35a;
+        --gold-dim: rgba(196, 163, 90, 0.2);
+        --teal: #0f766e;
+        --teal-bright: #14b8a6;
+        --teal-glow: rgba(20, 184, 166, 0.35);
+        --err: #b91c1c;
+        --err-bg: rgba(185, 28, 28, 0.08);
+        --ok: #15803d;
+        --ok-bg: rgba(21, 128, 61, 0.1);
+        --info: #0e7490;
+        --info-bg: rgba(14, 116, 144, 0.1);
+        --radius: 18px;
+        --radius-sm: 12px;
+        --shadow: 0 4px 24px rgba(15, 20, 25, 0.12),
+          0 1px 3px rgba(15, 20, 25, 0.06);
+        --font-sans: "DM Sans", system-ui, sans-serif;
+        --font-display: "Fraunces", Georgia, serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font-sans);
+        font-size: 15px;
+        color: var(--ink);
+        line-height: 1.55;
+        background: var(--bg-deep);
+        background-image: radial-gradient(
+            ellipse 120% 80% at 10% -20%,
+            rgba(20, 184, 166, 0.15),
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse 80% 60% at 100% 0%,
+            rgba(196, 163, 90, 0.12),
+            transparent 45%
+          ),
+          linear-gradient(165deg, var(--bg-deep) 0%, var(--bg-mid) 55%, #0c1014 100%);
+      }
+
+      .page {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .site-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        animation: rise 0.7s ease-out;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--teal-bright);
+        background: rgba(20, 184, 166, 0.12);
+        border: 1px solid rgba(20, 184, 166, 0.25);
+        margin-bottom: 1rem;
+      }
+
+      .badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--teal-bright);
+        box-shadow: 0 0 10px var(--teal-glow);
+      }
+
+      .site-header h1 {
+        font-family: var(--font-display);
+        font-size: clamp(1.75rem, 4vw, 2.25rem);
+        font-weight: 600;
+        font-optical-sizing: auto;
+        margin: 0 0 0.5rem;
+        color: #faf7f2;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+      }
+
+      .site-header .lead {
+        margin: 0 auto;
+        max-width: 36rem;
+        font-size: 0.95rem;
+        color: rgba(250, 247, 242, 0.65);
+        font-weight: 400;
+      }
+
+      .card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 1.5rem 1.6rem;
+        margin-bottom: 1.25rem;
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(255, 255, 255, 0.65);
+        animation: rise 0.55s ease-out backwards;
+      }
+
+      .card:nth-of-type(1) {
+        animation-delay: 0.05s;
+      }
+      .card:nth-of-type(2) {
+        animation-delay: 0.1s;
+      }
+      .card:nth-of-type(3) {
+        animation-delay: 0.15s;
+      }
+
+      .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin: 0 0 0.35rem;
+      }
+
+      .section-title {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0 0 1.1rem;
+        color: var(--ink);
+      }
+
+      .sub {
+        color: var(--muted);
+        font-size: 0.88rem;
+        margin: 0 0 1rem;
+      }
+
+      label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        margin-bottom: 0.4rem;
+        color: var(--muted);
+      }
+
+      input {
+        width: 100%;
+        padding: 0.7rem 0.85rem;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        font-size: 0.95rem;
+        font-family: inherit;
+        margin-bottom: 0.95rem;
+        background: #fff;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      input:hover {
+        border-color: rgba(15, 118, 110, 0.35);
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--teal);
+        box-shadow: 0 0 0 3px var(--teal-glow);
+      }
+
+      .input-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 1rem;
+      }
+
+      @media (max-width: 560px) {
+        .input-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .btn {
+        width: 100%;
+        padding: 0.78rem 1.1rem;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 0.95rem;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-primary {
+        color: #fff;
+        background: linear-gradient(
+          135deg,
+          var(--teal) 0%,
+          #0d9488 45%,
+          #0f766e 100%
+        );
+        box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
+      }
+
+      .btn-primary:not(:disabled):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(15, 118, 110, 0.45);
+      }
+
+      .btn-secondary {
+        margin-top: 0.6rem;
+        background: var(--ink);
+        color: #faf7f2;
+      }
+
+      .btn-secondary:not(:disabled):hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-ghost {
+        width: auto;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        background: var(--surface-2);
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      .btn-ghost:not(:disabled):hover {
+        background: #fff;
+        border-color: var(--teal);
+        color: var(--teal);
+      }
+
+      .banner {
+        padding: 1rem 1.15rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.9rem;
+        margin-bottom: 1.25rem;
+        line-height: 1.5;
+        border: 1px solid transparent;
+        animation: rise 0.45s ease-out;
+      }
+
+      .banner.ok {
+        background: var(--ok-bg);
+        color: #166534;
+        border-color: rgba(21, 128, 61, 0.2);
+      }
+
+      .banner.err {
+        background: var(--err-bg);
+        color: #991b1b;
+        border-color: rgba(185, 28, 28, 0.2);
+      }
+
+      .banner.info {
+        background: var(--info-bg);
+        color: #155e75;
+        border-color: rgba(14, 116, 144, 0.2);
+      }
+
+      #payment-element {
+        margin: 0.5rem 0 1.1rem;
+        padding: 0.25rem;
+      }
+
+      pre {
+        font-family: "ui-monospace", "Cascadia Code", "Consolas", monospace;
+        font-size: 0.72rem;
+        line-height: 1.45;
+        overflow: auto;
+        background: var(--surface-2);
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        margin: 0.5rem 0 0;
+        border: 1px solid var(--line);
+        max-height: 320px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .hint {
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-top: 0.65rem;
+        padding: 0.85rem 1rem;
+        background: var(--surface-2);
+        border-radius: var(--radius-sm);
+        border-left: 3px solid var(--gold);
+      }
+
+      .hint code {
+        font-size: 0.8em;
+        padding: 0.15rem 0.35rem;
+        background: #fff;
+        border-radius: 4px;
+        border: 1px solid var(--line);
+      }
+
+      .pay-table-wrap {
+        margin: 0 0 1rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        background: #fff;
+        overflow: auto;
+        max-height: min(360px, 55vh);
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .pay-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+      }
+
+      .pay-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: linear-gradient(180deg, var(--surface-2) 0%, #f5f0e8 100%);
+        box-shadow: 0 1px 0 var(--line);
+      }
+
+      .pay-table th {
+        text-align: left;
+        padding: 0.65rem 0.85rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .pay-table td {
+        padding: 0.7rem 0.85rem;
+        border-top: 1px solid var(--line);
+        vertical-align: middle;
+      }
+
+      .pay-table tbody tr {
+        cursor: pointer;
+        transition: background 0.12s ease;
+      }
+
+      .pay-table tbody tr:hover {
+        background: rgba(20, 184, 166, 0.06);
+      }
+
+      .pay-table tbody tr.selected {
+        background: linear-gradient(
+          90deg,
+          rgba(20, 184, 166, 0.14) 0%,
+          rgba(255, 255, 255, 0.9) 14%
+        );
+        box-shadow: inset 3px 0 0 var(--teal);
+      }
+
+      .pay-table .col-id {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--ink);
+      }
+
+      .pay-table .col-num {
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+
+      .pay-table th.col-num {
+        text-align: right;
+      }
+
+      .pay-table .col-date {
+        color: var(--muted);
+        font-size: 0.8rem;
+        white-space: nowrap;
+      }
+
+      .status-pill {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 0.25rem 0.55rem;
+        border-radius: 999px;
+        background: #e7e5e4;
+      }
+
+      .status-pill.SUCCESS {
+        background: #dcfce7;
+        color: var(--ok);
+      }
+
+      .status-pill.PENDING {
+        background: #fef9c3;
+        color: #854d0e;
+      }
+
+      .status-pill.FAILED {
+        background: #fee2e2;
+        color: var(--err);
+      }
+
+      .status-pill.REFUNDED {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+
+      .detail-head {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin: 1rem 0 0.45rem;
+        color: var(--muted);
+      }
+
+      .detail-head:first-of-type {
+        margin-top: 0;
+      }
+
+      .row-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.85rem;
+      }
+
+      .checkout-head {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .checkout-head .pi {
+        font-family: var(--font-display);
+        font-weight: 600;
+        color: var(--teal);
+        font-size: 1rem;
+      }
+
+      .footer-note {
+        text-align: center;
+        margin-top: 2rem;
+        font-size: 0.75rem;
+        color: rgba(250, 247, 242, 0.35);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="site-header">
+        <div class="badge">Test mode</div>
+        <h1>Payment console</h1>
+        <p class="lead">
+          Create a payment intent through your API, complete checkout with Stripe
+          test cards, and inspect bookings—all in one place.
+        </p>
+      </header>
+
+      <div id="redirect-banner" class="hidden"></div>
+
+      <section class="card" id="panel-list">
+        <p class="section-label">Bookings</p>
+        <h2 class="section-title">Payment history</h2>
+        <label for="listBookingId">Booking ID</label>
+        <input id="listBookingId" type="text" value="test-booking-1" />
+
+        <div class="row-actions">
+          <button type="button" class="btn btn-ghost small" id="btnLoadList">
+            Load payments
+          </button>
+        </div>
+
+        <p class="detail-head">Select a row</p>
+        <div class="pay-table-wrap">
+          <table class="pay-table" aria-label="Payments for booking">
+            <thead>
+              <tr>
+                <th scope="col">Payment ID</th>
+                <th scope="col" class="col-num">Amount</th>
+                <th scope="col">Currency</th>
+                <th scope="col">Method</th>
+                <th scope="col">Status</th>
+                <th scope="col">Created</th>
+              </tr>
+            </thead>
+            <tbody id="paymentTableBody"></tbody>
+          </table>
+        </div>
+        <p id="listEmpty" class="hint hidden" style="border-left-color: var(--muted)">
+          No payments found for this booking.
+        </p>
+
+        <p class="detail-head">Full API response</p>
+        <pre id="detailOut">Select a row in the table above.</pre>
+      </section>
+
+      <section class="card" id="step-config">
+        <p class="section-label">New payment</p>
+        <h2 class="section-title">Create &amp; pay</h2>
+
+        <label for="apiBase">API base URL</label>
+        <input
+          id="apiBase"
+          type="url"
+          value="http://127.0.0.1:8003"
+          autocomplete="off"
+        />
+
+        <label for="pk">Stripe publishable key</label>
+        <input
+          id="pk"
+          type="text"
+          placeholder="pk_test_..."
+          autocomplete="off"
+        />
+
+        <label for="bookingId">Booking ID</label>
+        <input id="bookingId" type="text" value="test-booking-1" />
+
+        <label for="customerId">Customer ID</label>
+        <input id="customerId" type="text" value="test-customer-1" />
+
+        <div class="input-row">
+          <div>
+            <label for="amount">Amount</label>
+            <input id="amount" type="number" step="0.01" min="0.01" value="2000" />
+          </div>
+          <div>
+            <label for="currency">Currency</label>
+            <input id="currency" type="text" value="LKR" maxlength="3" />
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary" id="btnCreate">
+          Create payment &amp; continue
+        </button>
+        <p class="hint">
+          Charges must meet Stripe’s minimum (~<strong>USD 0.50</strong> equivalent).
+          Test card <code>4242 4242 4242 4242</code> — any future expiry, any CVC.
+        </p>
+      </section>
+
+      <section class="card hidden" id="step-pay">
+        <p class="section-label">Checkout</p>
+        <div class="checkout-head">
+          <span class="sub" style="margin: 0">Payment</span>
+          <span class="pi" id="lblPaymentId"></span>
+        </div>
+        <div id="payment-element"></div>
+        <button type="button" class="btn btn-primary" id="btnPay">Pay now</button>
+        <button type="button" class="btn btn-secondary" id="btnReset">
+          Start over
+        </button>
+      </section>
+
+      <section class="card hidden" id="step-result">
+        <p class="section-label">Response</p>
+        <h2 class="section-title" style="margin-bottom: 0.5rem">Last API payload</h2>
+        <pre id="jsonOut"></pre>
+      </section>
+
+      <p class="footer-note">Hotel payment service · local development</p>
+    </div>
+
+    <script>
+      (function () {
+        let stripe = null;
+        let elements = null;
+        let clientSecret = null;
+        let paymentId = null;
+
+        const apiBase = () => {
+          const v = document.getElementById("apiBase").value.trim().replace(/\/$/, "");
+          if (v) return v;
+          if (
+            window.location.protocol === "http:" ||
+            window.location.protocol === "https:"
+          ) {
+            return window.location.origin;
+          }
+          return "http://127.0.0.1:8003";
+        };
+
+        function stripeSyncUrl() {
+          const path = "/payments/stripe/sync-intent";
+          if (
+            window.location.protocol === "http:" ||
+            window.location.protocol === "https:"
+          ) {
+            return window.location.origin.replace(/\/$/, "") + path;
+          }
+          return apiBase() + path;
+        }
+
+        const bookingInput = document.getElementById("bookingId");
+        const listBookingInput = document.getElementById("listBookingId");
+
+        function syncBookingFields(from, to) {
+          to.value = from.value;
+        }
+        bookingInput.addEventListener("input", () =>
+          syncBookingFields(bookingInput, listBookingInput)
+        );
+        listBookingInput.addEventListener("input", () =>
+          syncBookingFields(listBookingInput, bookingInput)
+        );
+
+        let selectedPaymentId = null;
+
+        function renderPaymentList(items) {
+          const tbody = document.getElementById("paymentTableBody");
+          const empty = document.getElementById("listEmpty");
+          tbody.innerHTML = "";
+          if (!items || items.length === 0) {
+            empty.classList.remove("hidden");
+            return;
+          }
+          empty.classList.add("hidden");
+          items.forEach((p) => {
+            const tr = document.createElement("tr");
+            tr.className = "pay-row";
+            tr.dataset.paymentId = p.payment_id;
+            if (p.payment_id === selectedPaymentId) {
+              tr.classList.add("selected");
+            }
+            const when = p.created_at
+              ? new Date(p.created_at).toLocaleString()
+              : "—";
+            const st = escapeHtml(p.status || "");
+            tr.innerHTML =
+              '<td class="col-id">' +
+              escapeHtml(p.payment_id) +
+              "</td>" +
+              '<td class="col-num">' +
+              escapeHtml(String(p.amount)) +
+              "</td>" +
+              "<td>" +
+              escapeHtml(p.currency || "") +
+              "</td>" +
+              "<td>" +
+              escapeHtml(String(p.method || "")) +
+              "</td>" +
+              '<td><span class="status-pill ' +
+              st +
+              '">' +
+              st +
+              "</span></td>" +
+              '<td class="col-date">' +
+              escapeHtml(when) +
+              "</td>";
+            tr.addEventListener("click", () => loadPaymentDetail(p.payment_id));
+            tbody.appendChild(tr);
+          });
+        }
+
+        function escapeHtml(s) {
+          const d = document.createElement("div");
+          d.textContent = s;
+          return d.innerHTML;
+        }
+
+        async function loadPaymentDetail(paymentId) {
+          selectedPaymentId = paymentId;
+          document.querySelectorAll(".pay-table tbody tr.pay-row").forEach((el) => {
+            el.classList.toggle(
+              "selected",
+              el.dataset.paymentId === paymentId
+            );
+          });
+          const detail = document.getElementById("detailOut");
+          detail.textContent = "Loading…";
+          try {
+            const res = await fetch(
+              apiBase() + "/payments/" + encodeURIComponent(paymentId)
+            );
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              detail.textContent = JSON.stringify(data, null, 2);
+              return;
+            }
+            detail.textContent = JSON.stringify(data, null, 2);
+          } catch (e) {
+            detail.textContent = String(e);
+          }
+        }
+
+        async function loadPaymentList() {
+          const bid = document.getElementById("listBookingId").value.trim();
+          if (!bid) {
+            alert("Enter a booking ID.");
+            return;
+          }
+          const btn = document.getElementById("btnLoadList");
+          btn.disabled = true;
+          document.getElementById("paymentTableBody").innerHTML = "";
+          document.getElementById("listEmpty").classList.add("hidden");
+          try {
+            const res = await fetch(
+              apiBase() +
+                "/payments/booking/" +
+                encodeURIComponent(bid)
+            );
+            const data = await res.json().catch(() => null);
+            if (!res.ok) {
+              alert(
+                (data && data.detail) || res.statusText || "Failed to load list"
+              );
+              renderPaymentList([]);
+              return;
+            }
+            renderPaymentList(Array.isArray(data) ? data : []);
+            if (
+              selectedPaymentId &&
+              Array.isArray(data) &&
+              data.some((p) => p.payment_id === selectedPaymentId)
+            ) {
+              loadPaymentDetail(selectedPaymentId);
+            }
+          } catch (e) {
+            alert(e.message || String(e));
+          } finally {
+            btn.disabled = false;
+          }
+        }
+
+        document
+          .getElementById("btnLoadList")
+          .addEventListener("click", loadPaymentList);
+
+        document.getElementById("btnCreate").addEventListener("click", async () => {
+          const pk = document.getElementById("pk").value.trim();
+          if (!pk) {
+            alert("Enter your Stripe publishable key (pk_test_...).");
+            return;
+          }
+
+          const body = {
+            booking_id: document.getElementById("bookingId").value.trim(),
+            customer_id: document.getElementById("customerId").value.trim(),
+            amount: parseFloat(document.getElementById("amount").value, 10),
+            currency: document.getElementById("currency").value.trim() || "LKR",
+            method: "CARD",
+          };
+
+          if (!body.booking_id || !body.customer_id || body.amount <= 0) {
+            alert("Check booking, customer, and amount.");
+            return;
+          }
+
+          document.getElementById("btnCreate").disabled = true;
+
+          try {
+            const res = await fetch(apiBase() + "/payments", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            const data = await res.json().catch(() => ({}));
+            document.getElementById("jsonOut").textContent = JSON.stringify(
+              data,
+              null,
+              2
+            );
+            document.getElementById("step-result").classList.remove("hidden");
+
+            if (!res.ok) {
+              throw new Error(data.detail || res.statusText || "Create failed");
+            }
+
+            if (!data.stripe_client_secret) {
+              throw new Error("No stripe_client_secret in response.");
+            }
+
+            clientSecret = data.stripe_client_secret;
+            paymentId = data.payment_id;
+
+            stripe = Stripe(pk);
+            elements = stripe.elements({ clientSecret });
+            const paymentElement = elements.create("payment");
+            document.getElementById("payment-element").innerHTML = "";
+            paymentElement.mount("#payment-element");
+
+            document.getElementById("lblPaymentId").textContent = paymentId;
+            document.getElementById("step-config").classList.add("hidden");
+            document.getElementById("step-pay").classList.remove("hidden");
+            selectedPaymentId = paymentId;
+            await loadPaymentList();
+          } catch (e) {
+            alert(e.message || String(e));
+          } finally {
+            document.getElementById("btnCreate").disabled = false;
+          }
+        });
+
+        document.getElementById("btnPay").addEventListener("click", async () => {
+          if (!stripe || !elements) return;
+          document.getElementById("btnPay").disabled = true;
+          try {
+            const { error } = await stripe.confirmPayment({
+              elements,
+              confirmParams: {
+                return_url:
+                  window.location.origin + window.location.pathname,
+              },
+            });
+            if (error) {
+              alert(error.message);
+            }
+          } catch (e) {
+            alert(e.message || String(e));
+          } finally {
+            document.getElementById("btnPay").disabled = false;
+          }
+        });
+
+        document.getElementById("btnReset").addEventListener("click", () => {
+          window.location.href = window.location.pathname;
+        });
+
+        async function handleStripeReturn() {
+          const params = new URLSearchParams(window.location.search);
+          const redirectStatus = params.get("redirect_status");
+          const pi = params.get("payment_intent");
+          if (!redirectStatus || !pi) return;
+
+          const el = document.getElementById("redirect-banner");
+          el.classList.remove("hidden");
+
+          if (redirectStatus === "succeeded") {
+            try {
+              const syncRes = await fetch(stripeSyncUrl(), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ payment_intent_id: pi }),
+              });
+              const text = await syncRes.text();
+              let syncData = {};
+              try {
+                syncData = text ? JSON.parse(text) : {};
+              } catch {
+                syncData = { _parse_error: text.slice(0, 500) };
+              }
+              if (syncRes.ok) {
+                el.className = "banner ok";
+                el.textContent =
+                  "Payment succeeded. Database status updated to " +
+                  (syncData.status || "SUCCESS") +
+                  " (Intent: " +
+                  pi +
+                  ").";
+                if (syncData.booking_id) {
+                  listBookingInput.value = syncData.booking_id;
+                  bookingInput.value = syncData.booking_id;
+                }
+                if (syncData.payment_id) {
+                  selectedPaymentId = syncData.payment_id;
+                  await loadPaymentList();
+                  await loadPaymentDetail(syncData.payment_id);
+                  document
+                    .getElementById("step-result")
+                    .classList.remove("hidden");
+                  document.getElementById("jsonOut").textContent =
+                    JSON.stringify(syncData, null, 2);
+                }
+                return;
+              }
+              el.className = "banner err";
+              const detailMsg =
+                typeof syncData.detail === "string"
+                  ? syncData.detail
+                  : Array.isArray(syncData.detail)
+                    ? JSON.stringify(syncData.detail)
+                    : JSON.stringify(syncData.detail || syncData);
+              el.textContent =
+                "Sync failed (HTTP " +
+                syncRes.status +
+                "): " +
+                (detailMsg && detailMsg !== "{}"
+                  ? detailMsg
+                  : text.slice(0, 400) || "(empty body)");
+            } catch (e) {
+              el.className = "banner err";
+              el.textContent =
+                "Stripe reported success but sync request failed: " + String(e);
+            }
+            return;
+          }
+
+          el.className =
+            "banner " +
+            (redirectStatus === "failed" ? "err" : "info");
+          el.textContent =
+            "Stripe redirect status: " +
+            redirectStatus +
+            " (payment_intent: " +
+            pi +
+            ")";
+        }
+
+        handleStripeReturn();
+      })();
+    </script>
+  </body>
+</html>
