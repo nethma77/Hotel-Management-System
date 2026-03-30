@@ -1,7 +1,16 @@
-from fastapi import FastAPI, HTTPException
-from database.db import reviews_collection
-from models.review_model import ReviewModel
+import logging
+
 from bson import ObjectId
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s %(name)s: %(message)s",
+)
+
+from database.db import client as mongo_client, reviews_collection
+from models.review_model import ReviewModel
 
 
 app = FastAPI(title="Hotel Review Service")
@@ -10,6 +19,23 @@ app = FastAPI(title="Hotel Review Service")
 @app.get("/")
 async def root():
     return {"message": "Review service is running"}
+
+
+@app.get("/health")
+def health():
+    """Returns 200 if MongoDB responds to ping; 503 if not."""
+    try:
+        mongo_client.admin.command("ping")
+        return {"status": "ok", "mongo": "connected"}
+    except Exception as exc:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "mongo": "disconnected",
+                "detail": str(exc),
+            },
+        )
 
 # Create a review
 @app.post("/reviews")

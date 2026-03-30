@@ -21,11 +21,12 @@ def _check_connection_once(client: MongoClient) -> None:
 
     try:
         client.admin.command("ping")
-        logger.info("MongoDB connected successfully.")
-        print("MongoDB Atlas connected successfully!")
+        logger.info(
+            "MongoDB connected (ping ok); database=%s",
+            MONGODB_DB_NAME,
+        )
     except Exception as exc:
-        logger.warning("MongoDB connection failed: %s", exc)
-        print("MongoDB connection error:", exc)
+        logger.warning("MongoDB connection check failed: %s", exc)
     finally:
         _connection_checked = True
 
