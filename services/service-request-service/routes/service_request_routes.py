@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from uuid import uuid4
 from fastapi import APIRouter, HTTPException, status
 from pymongo import DESCENDING
 from bson import ObjectId
@@ -13,18 +14,25 @@ from models.service_request_model import (
 router = APIRouter(prefix="/service-requests", tags=["service-requests"])
 
 
-def _utc_now() -> datetime:
+def _utc_now():
     return datetime.now(timezone.utc)
 
 
-def _to_response(doc: dict) -> ServiceRequestResponse:
+def _generate_request_id():
+    return f"REQ-{uuid4().hex[:8].upper()}"
+
+
+def _to_response(doc):
+    mongo_id = str(doc["_id"])
     return ServiceRequestResponse(
-        id=str(doc["_id"]),
-        guest_name=doc["guest_name"],
-        room_number=doc["room_number"],
-        request_type=doc["request_type"],
-        description=doc["description"],
-        status=doc["status"],
+        id=mongo_id,
+        request_id=doc.get("request_id", mongo_id),
+        customer_id=doc.get("customer_id", ""),
+        customer_name=doc.get("customer_name", ""),
+        room_number=doc.get("room_number", 0),
+        request_type=doc.get("request_type", ""),
+        description=doc.get("description", ""),
+        status=doc.get("status", "Pending"),
         created_at=doc["created_at"],
         updated_at=doc["updated_at"],
     )
@@ -32,11 +40,13 @@ def _to_response(doc: dict) -> ServiceRequestResponse:
 
 @router.post("", response_model=ServiceRequestResponse, status_code=status.HTTP_201_CREATED)
 def create_service_request(payload: CreateServiceRequest):
-    service_requests = get_service_request_collection()
+    collection = get_service_request_collection()
     now = _utc_now()
 
     request_doc = {
-        "guest_name": payload.guest_name,
+        "request_id": _generate_request_id(),
+        "customer_id": payload.customer_id,
+        "customer_name": payload.customer_name,
         "room_number": payload.room_number,
         "request_type": payload.request_type,
         "description": payload.description,
@@ -45,7 +55,7 @@ def create_service_request(payload: CreateServiceRequest):
         "updated_at": now,
     }
 
-    inserted = service_requests.insert_one(request_doc)
+    inserted = collection.insert_one(request_doc)
     request_doc["_id"] = inserted.inserted_id
 
     return _to_response(request_doc)
@@ -53,18 +63,18 @@ def create_service_request(payload: CreateServiceRequest):
 
 @router.get("", response_model=list[ServiceRequestResponse])
 def get_all_service_requests():
-    service_requests = get_service_request_collection()
-    docs = service_requests.find().sort("created_at", DESCENDING)
+    collection = get_service_request_collection()
+    docs = collection.find().sort("created_at", DESCENDING)
     return [_to_response(doc) for doc in docs]
 
 
 @router.get("/{request_id}", response_model=ServiceRequestResponse)
 def get_service_request_by_id(request_id: str):
-    service_requests = get_service_request_collection()
+    collection = get_service_request_collection()
 
     try:
-        doc = service_requests.find_one({"_id": ObjectId(request_id)})
-    except Exception:
+        doc = collection.find_one({"_id": ObjectId(request_id)})
+    except:
         raise HTTPException(status_code=400, detail="Invalid request ID")
 
     if not doc:
@@ -75,18 +85,18 @@ def get_service_request_by_id(request_id: str):
 
 @router.get("/room/{room_number}", response_model=list[ServiceRequestResponse])
 def get_service_requests_by_room(room_number: int):
-    service_requests = get_service_request_collection()
-    docs = service_requests.find({"room_number": room_number}).sort("created_at", DESCENDING)
+    collection = get_service_request_collection()
+    docs = collection.find({"room_number": room_number}).sort("created_at", DESCENDING)
     return [_to_response(doc) for doc in docs]
 
 
 @router.put("/{request_id}", response_model=ServiceRequestResponse)
 def update_service_request(request_id: str, payload: UpdateServiceRequest):
-    service_requests = get_service_request_collection()
+    collection = get_service_request_collection()
 
     try:
-        existing = service_requests.find_one({"_id": ObjectId(request_id)})
-    except Exception:
+        existing = collection.find_one({"_id": ObjectId(request_id)})
+    except:
         raise HTTPException(status_code=400, detail="Invalid request ID")
 
     if not existing:
@@ -98,27 +108,24 @@ def update_service_request(request_id: str, payload: UpdateServiceRequest):
         if value is not None
     }
 
-    if not update_fields:
-        raise HTTPException(status_code=400, detail="No fields provided for update")
-
     update_fields["updated_at"] = _utc_now()
 
-    service_requests.update_one(
+    collection.update_one(
         {"_id": existing["_id"]},
         {"$set": update_fields},
     )
 
-    updated = service_requests.find_one({"_id": existing["_id"]})
+    updated = collection.find_one({"_id": existing["_id"]})
     return _to_response(updated)
 
 
 @router.delete("/{request_id}")
 def delete_service_request(request_id: str):
-    service_requests = get_service_request_collection()
+    collection = get_service_request_collection()
 
     try:
-        result = service_requests.delete_one({"_id": ObjectId(request_id)})
-    except Exception:
+        result = collection.delete_one({"_id": ObjectId(request_id)})
+    except:
         raise HTTPException(status_code=400, detail="Invalid request ID")
 
     if result.deleted_count == 0:
