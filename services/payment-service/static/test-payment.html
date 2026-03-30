@@ -558,7 +558,7 @@
         <input
           id="apiBase"
           type="url"
-          value="http://127.0.0.1:8003"
+          value=""
           autocomplete="off"
         />
 
@@ -625,26 +625,33 @@
         let clientSecret = null;
         let paymentId = null;
 
+        function getDefaultApiBase() {
+          if (
+            (window.location.protocol === "http:" ||
+              window.location.protocol === "https:") &&
+            window.location.pathname.startsWith("/payment/")
+          ) {
+            return window.location.origin.replace(/\/$/, "") + "/payment";
+          }
+          if (
+            window.location.protocol === "http:" ||
+            window.location.protocol === "https:"
+          ) {
+            return window.location.origin.replace(/\/$/, "");
+          }
+          return "http://127.0.0.1:8003";
+        }
+
         const apiBase = () => {
           const v = document.getElementById("apiBase").value.trim().replace(/\/$/, "");
           if (v) return v;
-          if (
-            window.location.protocol === "http:" ||
-            window.location.protocol === "https:"
-          ) {
-            return window.location.origin;
-          }
-          return "http://127.0.0.1:8003";
+          return getDefaultApiBase();
         };
+
+        document.getElementById("apiBase").value = getDefaultApiBase();
 
         function stripeSyncUrl() {
           const path = "/payments/stripe/sync-intent";
-          if (
-            window.location.protocol === "http:" ||
-            window.location.protocol === "https:"
-          ) {
-            return window.location.origin.replace(/\/$/, "") + path;
-          }
           return apiBase() + path;
         }
 
@@ -773,7 +780,12 @@
               loadPaymentDetail(selectedPaymentId);
             }
           } catch (e) {
-            alert(e.message || String(e));
+            const msg = e && e.message ? e.message : String(e);
+            alert(
+              msg +
+                "\n\nCheck API base URL and service availability.\n" +
+                "For gateway mode use: http://localhost:8000/payment"
+            );
           } finally {
             btn.disabled = false;
           }
