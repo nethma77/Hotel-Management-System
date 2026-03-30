@@ -4,7 +4,8 @@ from pydantic import BaseModel
 
 
 class CreateServiceRequest(BaseModel):
-    guest_name: str
+    customer_id: str
+    customer_name: str
     room_number: int
     request_type: str
     description: str
@@ -12,7 +13,8 @@ class CreateServiceRequest(BaseModel):
 
 
 class UpdateServiceRequest(BaseModel):
-    guest_name: Optional[str] = None
+    customer_id: Optional[str] = None
+    customer_name: Optional[str] = None
     room_number: Optional[int] = None
     request_type: Optional[str] = None
     description: Optional[str] = None
@@ -21,7 +23,9 @@ class UpdateServiceRequest(BaseModel):
 
 class ServiceRequestResponse(BaseModel):
     id: str
-    guest_name: str
+    request_id: str
+    customer_id: str
+    customer_name: str
     room_number: int
     request_type: str
     description: str
