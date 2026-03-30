@@ -11,7 +11,7 @@ MONGO_URL = os.getenv("MONGO_URL")
 if not MONGO_URL:
     raise RuntimeError("MONGO_URL is not set for booking-service")
 
-client = MongoClient(MONGO_URL)
+client = MongoClient(MONGO_URL, serverSelectionTimeoutMS=5000)
 
 db = client["booking_db"]
 
