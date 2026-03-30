@@ -23,15 +23,16 @@ def _generate_request_id():
 
 
 def _to_response(doc):
+    mongo_id = str(doc["_id"])
     return ServiceRequestResponse(
-        id=str(doc["_id"]),
-        request_id=doc["request_id"],
-        customer_id=doc["customer_id"],
-        customer_name=doc["customer_name"],
-        room_number=doc["room_number"],
-        request_type=doc["request_type"],
-        description=doc["description"],
-        status=doc["status"],
+        id=mongo_id,
+        request_id=doc.get("request_id", mongo_id),
+        customer_id=doc.get("customer_id", ""),
+        customer_name=doc.get("customer_name", ""),
+        room_number=doc.get("room_number", 0),
+        request_type=doc.get("request_type", ""),
+        description=doc.get("description", ""),
+        status=doc.get("status", "Pending"),
         created_at=doc["created_at"],
         updated_at=doc["updated_at"],
     )
