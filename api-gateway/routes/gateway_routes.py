@@ -78,6 +78,7 @@ def list_services() -> dict:
     "/{service_name}/{path:path}",
     methods=SUPPORTED_METHODS,
     summary="Proxy request to downstream service",
+    include_in_schema=False,
 )
 async def proxy_request(service_name: str, path: str, request: Request) -> Response:
     return await _forward_request(service_name, path, request)
