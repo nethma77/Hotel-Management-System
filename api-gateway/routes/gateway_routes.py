@@ -12,6 +12,37 @@ router = APIRouter(tags=["gateway"])
 SUPPORTED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 
 
+def _check_service_status(service_name: str, base_url: str) -> dict:
+    request = UrlRequest(
+        url=f"{base_url.rstrip('/')}/",
+        method="GET",
+        headers={"Accept": "application/json"},
+    )
+
+    try:
+        with urlopen(request, timeout=5) as upstream_response:
+            return {
+                "name": service_name,
+                "url": base_url,
+                "status": "live",
+                "status_code": upstream_response.status,
+            }
+    except HTTPError as exc:
+        return {
+            "name": service_name,
+            "url": base_url,
+            "status": "live",
+            "status_code": exc.code,
+        }
+    except URLError:
+        return {
+            "name": service_name,
+            "url": base_url,
+            "status": "offline",
+            "status_code": None,
+        }
+
+
 async def _forward_request(service_name: str, path: str, request: Request) -> Response:
     service = SERVICE_MAP.get(service_name)
     if not service:
@@ -71,6 +102,24 @@ def list_services() -> dict:
             name: config.base_url
             for name, config in SERVICE_MAP.items()
         }
+    }
+
+
+@router.get("/services/status")
+def list_service_status() -> dict:
+    services = [
+        _check_service_status(name, config.base_url)
+        for name, config in SERVICE_MAP.items()
+    ]
+    live_count = sum(service["status"] == "live" for service in services)
+
+    return {
+        "services": services,
+        "summary": {
+            "total": len(services),
+            "live": live_count,
+            "offline": len(services) - live_count,
+        },
     }
 
 

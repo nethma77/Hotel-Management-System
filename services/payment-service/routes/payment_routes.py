@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
 if STRIPE_SECRET_KEY:
     stripe.api_key = STRIPE_SECRET_KEY
 
@@ -319,6 +320,13 @@ async def stripe_webhook(request: Request) -> dict:
 async def stripe_webhook_singular_alias(request: Request) -> dict:
     """Same as /webhooks/stripe (Stripe CLI often uses singular 'webhook')."""
     return await _stripe_webhook_handler(request)
+
+
+@router.get("/config/public")
+def get_public_payment_config() -> dict:
+    return {
+        "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
+    }
 
 
 @router.get("/{payment_id}", response_model=PaymentResponse)
