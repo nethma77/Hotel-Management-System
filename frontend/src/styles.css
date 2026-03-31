@@ -47,6 +47,80 @@ button {
   gap: 32px;
 }
 
+.mobile-topbar {
+  display: none;
+}
+
+.mobile-nav-anchor {
+  position: relative;
+}
+
+.mobile-menu-button {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5eefb;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 5px;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.mobile-menu-button span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.mobile-menu-button:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  background: rgba(18, 45, 78, 0.95);
+}
+
+.mobile-menu-button:active {
+  transform: scale(0.97);
+}
+
+.mobile-menu-button.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.mobile-menu-button.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-menu-button.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+.mobile-topbar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e5eefb;
+}
+
+.mobile-dropdown-sidebar {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 40;
+  width: min(320px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 18px;
+  background: rgba(4, 12, 24, 0.96);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
 .sidebar h1 {
   margin: 8px 0 12px;
   font-size: 2rem;
@@ -122,6 +196,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
 }
 
 .hero-card,
@@ -141,6 +216,7 @@ button {
   justify-content: space-between;
   gap: 16px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .hero-card h2,
@@ -305,6 +381,7 @@ button {
   border-radius: 24px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
   padding: 24px;
+  min-width: 0;
 }
 
 .customer-panel-header,
@@ -322,6 +399,7 @@ button {
 .customer-header-actions {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .customer-form,
@@ -473,6 +551,7 @@ button {
   width: 100%;
   overflow-x: auto;
   margin-top: 16px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .customer-table {
@@ -544,6 +623,7 @@ button {
   border-radius: 24px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
   padding: 24px;
+  min-width: 0;
 }
 
 .service-page-header {
@@ -594,13 +674,24 @@ button {
 }
 
 @media (max-width: 960px) {
+  .dashboard-content {
+    padding: 24px;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
   }
 
   .sidebar {
-    border-right: 0;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    display: none;
+  }
+
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 20;
   }
 
   .hero-card,
@@ -635,6 +726,16 @@ button {
     align-items: stretch;
   }
 
+  .customer-panel,
+  .service-page {
+    padding: 20px;
+  }
+
+  .customer-form,
+  .customer-list-panel {
+    padding: 18px;
+  }
+
   .customer-form-grid {
     grid-template-columns: 1fr;
   }
@@ -650,5 +751,148 @@ button {
   .payment-status-select,
   .payment-action-button {
     width: 100%;
+  }
+
+  .customer-table {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-content {
+    padding: 18px;
+    gap: 18px;
+  }
+
+  .sidebar {
+    padding: 20px 16px;
+    gap: 24px;
+  }
+
+  .sidebar h1 {
+    font-size: 1.7rem;
+  }
+
+  .mobile-topbar {
+    margin-bottom: -4px;
+  }
+
+  .nav-item {
+    padding: 12px 14px;
+  }
+
+  .hero-card,
+  .status-panel,
+  .customer-panel,
+  .service-page,
+  .stat-card {
+    border-radius: 20px;
+  }
+
+  .hero-card,
+  .status-panel,
+  .customer-panel,
+  .service-page {
+    padding: 18px;
+  }
+
+  .customer-form,
+  .customer-list-panel {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .hero-card h2 {
+    font-size: 1.5rem;
+  }
+
+  .stat-card strong,
+  .detail-item strong {
+    font-size: 1.6rem;
+  }
+
+  .inline-input,
+  .status-select,
+  .payment-status-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .secondary-button {
+    width: 100%;
+  }
+
+  .table-actions {
+    flex-wrap: wrap;
+  }
+
+  .customer-table {
+    min-width: 640px;
+  }
+
+  .customer-table th,
+  .customer-table td {
+    padding: 12px 10px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-content {
+    padding: 14px;
+  }
+
+  .sidebar {
+    padding: 18px 14px;
+  }
+
+  .hero-card,
+  .status-panel,
+  .customer-panel,
+  .service-page {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .customer-form,
+  .customer-list-panel,
+  .service-page-card,
+  .endpoint-item {
+    padding: 14px;
+  }
+
+  .hero-card h2 {
+    font-size: 1.35rem;
+  }
+
+  .sidebar h1 {
+    font-size: 1.45rem;
+  }
+
+  .mobile-topbar-title {
+    font-size: 0.95rem;
+  }
+
+  .mobile-dropdown-sidebar {
+    width: min(300px, calc(100vw - 28px));
+    padding: 12px;
+  }
+
+  .status-row {
+    padding: 14px;
+  }
+
+  .badge {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .customer-table {
+    min-width: 560px;
+  }
+
+  .customer-table th,
+  .customer-table td {
+    padding: 10px 8px;
   }
 }

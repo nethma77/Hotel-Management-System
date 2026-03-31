@@ -22,6 +22,7 @@ import ServiceRequestPage from "./pages/ServiceRequestPage";
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [services, setServices] = useState(fallbackServices);
   const [summary, setSummary] = useState({
     total: fallbackServices.length,
@@ -34,8 +35,13 @@ function App() {
   const activeSection = getSectionFromPath(location.pathname);
 
   function navigateToSection(section) {
+    setIsMobileSidebarOpen(false);
     navigate(sectionPaths[section] || sectionPaths.dashboard);
   }
+
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     let isMounted = true;
@@ -102,6 +108,35 @@ function App() {
 
   const pageConfig = activeService ? servicePages[activeService.name] : null;
 
+  function renderNavigation() {
+    return (
+      <>
+        <button
+          type="button"
+          className={activeSection === "dashboard" ? "nav-item active" : "nav-item"}
+          onClick={() => navigateToSection("dashboard")}
+        >
+          Dashboard
+        </button>
+
+        {services.map((service) => (
+          <button
+            key={service.name}
+            type="button"
+            className={activeSection === service.name ? "nav-item active" : "nav-item"}
+            onClick={() => navigateToSection(service.name)}
+          >
+            <span>{service.label}</span>
+            <span
+              className={service.status === "live" ? "nav-dot live" : "nav-dot offline"}
+              aria-hidden="true"
+            />
+          </button>
+        ))}
+      </>
+    );
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -113,33 +148,45 @@ function App() {
           </p>
         </div>
 
-        <nav className="sidebar-nav" aria-label="Service navigation">
-          <button
-            type="button"
-            className={activeSection === "dashboard" ? "nav-item active" : "nav-item"}
-            onClick={() => navigateToSection("dashboard")}
-          >
-            Dashboard
-          </button>
-
-          {services.map((service) => (
-            <button
-              key={service.name}
-              type="button"
-              className={activeSection === service.name ? "nav-item active" : "nav-item"}
-              onClick={() => navigateToSection(service.name)}
-            >
-              <span>{service.label}</span>
-              <span
-                className={service.status === "live" ? "nav-dot live" : "nav-dot offline"}
-                aria-hidden="true"
-              />
-            </button>
-          ))}
+        <nav
+          id="mobile-sidebar-navigation"
+          className="sidebar-nav"
+          aria-label="Service navigation"
+        >
+          {renderNavigation()}
         </nav>
       </aside>
 
       <main className="dashboard-content">
+        <div className="mobile-topbar">
+          <div className="mobile-nav-anchor">
+            <button
+              type="button"
+              className={isMobileSidebarOpen ? "mobile-menu-button open" : "mobile-menu-button"}
+              onClick={() => setIsMobileSidebarOpen((current) => !current)}
+              aria-label={isMobileSidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={isMobileSidebarOpen}
+              aria-controls="mobile-dropdown-navigation"
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+            {isMobileSidebarOpen ? (
+              <div className="mobile-dropdown-sidebar">
+                <nav
+                  id="mobile-dropdown-navigation"
+                  className="sidebar-nav"
+                  aria-label="Mobile service navigation"
+                >
+                  {renderNavigation()}
+                </nav>
+              </div>
+            ) : null}
+          </div>
+          <span className="mobile-topbar-title">Hotel Management</span>
+        </div>
+
         <section className="hero-card">
           <div>
             <p className="section-label">
